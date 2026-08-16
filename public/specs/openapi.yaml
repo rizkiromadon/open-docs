@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+  title: Pantry API
+  version: 1.2.0
+  description: >-
+    A small sample API for managing pantry inventory items, used to
+    demonstrate open-docs against a real specification.
+servers:
+  - url: https://api.pantry.example.com/v1
+    description: Production
+  - url: https://staging-api.pantry.example.com/v1
+    description: Staging
+tags:
+  - name: Items
+    description: Manage individual pantry items.
+  - name: Categories
+    description: Organize items into categories.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Standard bearer token issued by the auth service.
+  schemas:
+    Item:
+      type: object
+      required: [id, name, quantity]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the item.
+        name:
+          type: string
+          description: Display name of the item.
+          example: Rolled oats
+        quantity:
+          type: integer
+          minimum: 0
+          description: Current quantity in stock.
+        unit:
+          type: string
+          enum: [g, kg, ml, l, unit]
+          default: unit
+        categoryId:
+          type: string
+          format: uuid
+          description: Category this item belongs to.
+        expiresAt:
+          type: string
+          format: date-time
+          description: Expiration timestamp, if perishable.
+    ItemCreate:
+      type: object
+      required: [name, quantity]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+        unit:
+          type: string
+          enum: [g, kg, ml, l, unit]
+        categoryId:
+          type: string
+          format: uuid
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Grains
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+paths:
+  /items:
+    get:
+      operationId: listItems
+      summary: List items
+      description: Returns all pantry items, optionally filtered by category.
+      tags: [Items]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          description: Filter results to a single category.
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum number of items to return.
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: A list of pantry items.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+        "401":
+          description: Missing or invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createItem
+      summary: Create item
+      description: Adds a new item to the pantry inventory.
+      tags: [Items]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemCreate"
+      responses:
+        "201":
+          description: The created item.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /items/{itemId}:
+    get:
+      operationId: getItem
+      summary: Get item
+      description: Retrieves a single item by its identifier.
+      tags: [Items]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The requested item.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteItem
+      summary: Delete item
+      description: Permanently removes an item from inventory.
+      tags: [Items]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Item deleted successfully.
+        "404":
+          description: Item not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /categories:
+    get:
+      operationId: listCategories
+      summary: List categories
+      description: Returns all available item categories.
+      tags: [Categories]
+      responses:
+        "200":
+          description: A list of categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
