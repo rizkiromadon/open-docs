@@ -26,7 +26,7 @@ function schemaExample(schema: SchemaNode): unknown {
   });
   const sample = generateFetchSample(operation, "https://api.example.com");
   const match = sample.match(/body: JSON\.stringify\(([\s\S]*?)\)\n\}\);/);
-  return match ? JSON.parse(match[1]) : undefined;
+  return match?.[1] ? JSON.parse(match[1]) : undefined;
 }
 
 describe("exampleFromSchema (via generators)", () => {

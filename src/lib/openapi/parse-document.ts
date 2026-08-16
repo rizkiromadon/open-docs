@@ -49,7 +49,7 @@ function parseRawDocument(raw: string): unknown {
 function detectSupportedVersion(
   version: string,
 ): { supported: SupportedOpenApiVersion; ok: boolean } {
-  const [major, minor] = version.split(".").map(Number);
+  const [major, minor = 0] = version.split(".").map(Number);
   if (major !== 3) {
     return { supported: "3.0", ok: false };
   }
